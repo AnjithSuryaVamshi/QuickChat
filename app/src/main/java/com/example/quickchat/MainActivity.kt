@@ -1,0 +1,129 @@
+package com.example.quickchat
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.quickchat.googlesignin.GoogleAuthUi
+import com.example.quickchat.screens.ChatsScreenUi
+import com.example.quickchat.screens.SigninScreen
+import com.example.quickchat.ui.theme.QuickChatTheme
+import com.google.android.gms.auth.api.identity.Identity
+import kotlinx.coroutines.launch
+
+class MainActivity : ComponentActivity() {
+    private val viewModel: ChatViewmodel by viewModels()
+    private val googleAuthUi by lazy {
+        GoogleAuthUi(
+            context = applicationContext,
+            oneTapClient = Identity.getSignInClient(applicationContext),
+            viewModel = viewModel
+        )
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            QuickChatTheme {
+
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        val state by viewModel.state.collectAsState()
+                        val navController = rememberNavController()
+                        NavHost(navController = navController, startDestination = StartScreen) {
+
+                            composable<StartScreen> {
+                                LaunchedEffect(key1 = Unit) {
+                                    val userData = googleAuthUi.getSignedInUser()
+                                    if (userData != null) {
+                                        navController.navigate(ChatsScreen)
+                                    } else {
+                                        navController.navigate(SignInSc)
+                                    }
+                                }
+
+
+                            }
+
+
+                            composable<SignInSc> {
+                                val launcher = rememberLauncherForActivityResult(
+                                    contract = ActivityResultContracts.StartIntentSenderForResult(),
+                                    onResult = {
+                                        if (it.resultCode == RESULT_OK) {
+                                            lifecycleScope.launch {
+                                                val result =
+                                                    googleAuthUi.signInWithIntent(
+                                                        it.data ?: return@launch
+                                                    )
+                                                viewModel.onSignInResult(result)
+
+                                            }
+
+                                        }
+                                    }
+                                )
+                                LaunchedEffect(key1 = state.isSignedIn) {
+                                    if (state.isSignedIn) {
+                                        val userData = googleAuthUi.getSignedInUser()
+                                        userData?.run {
+                                            viewModel.addUserDataToFirestore(userData)
+                                            navController.navigate(ChatsScreen)
+                                        }
+
+
+                                    }
+
+                                }
+
+                                SigninScreen(onSignInClick = {
+                                    lifecycleScope.launch {
+                                        val signInIntentSender = googleAuthUi.signIn()
+                                        launcher.launch(
+                                            IntentSenderRequest.Builder(
+                                                signInIntentSender ?: return@launch
+                                            ).build()
+                                        )
+                                    }
+
+                                })
+                            }
+                            composable<ChatsScreen> {
+                                ChatsScreenUi()
+                            }
+
+                        }
+
+                    }
+
+                }
+            }
+        }
+    }
+}
