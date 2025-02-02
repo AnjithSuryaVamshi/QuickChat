@@ -94,6 +94,7 @@ class MainActivity : ComponentActivity() {
                                         val userData = googleAuthUi.getSignedInUser()
                                         userData?.run {
                                             viewModel.addUserDataToFirestore(userData)
+                                            viewModel.getUserData(userData.userId)
                                             navController.navigate(ChatsScreen)
                                         }
 
@@ -115,7 +116,8 @@ class MainActivity : ComponentActivity() {
                                 })
                             }
                             composable<ChatsScreen> {
-                                ChatsScreenUi()
+                                ChatsScreenUi(viewmodel = viewModel,
+                                    state = state,)
                             }
 
                         }

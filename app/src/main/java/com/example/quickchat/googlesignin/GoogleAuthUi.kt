@@ -58,8 +58,8 @@ class GoogleAuthUi(
                 data = user?.run {
                     UserData(
                         userId = uid,
-                        username = displayName.toString(),
-                        ppurl = photoUrl.toString().substring(0, photoUrl.toString().length - 6),
+                        username = displayName,
+                        ppurl = photoUrl.toString(),
                         email = email.toString()
                     )
 

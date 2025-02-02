@@ -3,6 +3,7 @@ package com.example.quickchat
 import android.content.ContentValues
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.update
 
 class ChatViewmodel : ViewModel() {
     private val userCollection  = Firebase.firestore.collection(USERS_COLLECTION)
+    var userDataListner : ListenerRegistration? = null
     private val _state = MutableStateFlow(AppState())
     val state = _state.asStateFlow()
     fun resetState(){
@@ -52,5 +54,39 @@ class ChatViewmodel : ViewModel() {
 
 
     }
+
+    fun getUserData(userId: String) {
+        userDataListner = userCollection.document(userId).addSnapshotListener { value, error ->
+            if (value != null) {
+                _state.update {
+                    it.copy(userData = value.toObject(UserData::class.java))
+                }
+            }
+        }
+    }
+    fun hideDialog(){
+        _state.update {
+            it.copy(showDialog = false)
+        }
+    }
+    fun showDialog(){
+        _state.update {
+            it.copy(showDialog = true)
+        }
+    }
+
+    fun setSrEmail(email: String) {
+        _state.update {
+            it.copy(srEmail = email)
+        }
+
+
+    }
+
+    fun addChat(srEmail: String) {
+
+
+    }
+
 
 }
