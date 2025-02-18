@@ -1,22 +1,8 @@
 package com.example.quickchat.dialogs
 
-import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +10,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.quickchat.AppState
-
 
 @Composable
 fun CustomDialogBox(
@@ -42,54 +27,47 @@ fun CustomDialogBox(
         )
     ) {
         Card(
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 8.dp
-            ),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxSize(),
-            colors = CardDefaults.cardColors(
-                MaterialTheme.colorScheme.primary
-            )
-
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
         ) {
             Column(
-                modifier = Modifier.padding(15.dp),
-                verticalArrangement = Arrangement.spacedBy(25.dp)
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("enter your email",modifier = Modifier.align(Alignment.CenterHorizontally))
+                // Title
+                Text(
+                    text = "Enter Email",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Email Input Field
                 OutlinedTextField(
-                    label = { Text("email") },
+                    label = { Text("Email") },
                     value = state.srEmail,
                     onValueChange = { setEmail(it) },
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(
-                        onClick = { hideDialog }
-                    ) {
-                        Text(
-                            "cancel",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                    TextButton(onClick = { hideDialog() }) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.error)
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    TextButton(
-                        onClick = { addChat }
-                    ) {
-                        Text(
-                            "Add",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    TextButton(onClick = { addChat() }) {
+                        Text("Add", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

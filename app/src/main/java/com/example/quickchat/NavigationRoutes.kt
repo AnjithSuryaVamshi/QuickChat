@@ -8,3 +8,6 @@ object StartScreen
 object SignInSc
 @Serializable
 object ChatsScreen
+
+@Serializable
+object Chat

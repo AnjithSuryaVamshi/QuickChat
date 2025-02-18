@@ -62,6 +62,8 @@ class MainActivity : ComponentActivity() {
                                 LaunchedEffect(key1 = Unit) {
                                     val userData = googleAuthUi.getSignedInUser()
                                     if (userData != null) {
+                                        viewModel.getUserData(userData.userId)
+                                        viewModel.showChats(userData.userId)
                                         navController.navigate(ChatsScreen)
                                     } else {
                                         navController.navigate(SignInSc)
@@ -95,6 +97,7 @@ class MainActivity : ComponentActivity() {
                                         userData?.run {
                                             viewModel.addUserDataToFirestore(userData)
                                             viewModel.getUserData(userData.userId)
+                                            viewModel.showChats(userData.userId)
                                             navController.navigate(ChatsScreen)
                                         }
 
