@@ -16,12 +16,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class ChatViewmodel : ViewModel() {
+    val message: List<Message> =  emptyList()
     private val userCollection  = Firebase.firestore.collection(USERS_COLLECTION)
     var userDataListner : ListenerRegistration? = null
     var chatDataListner : ListenerRegistration? = null
     private val _state = MutableStateFlow(AppState())
     val state = _state.asStateFlow()
     var chats by mutableStateOf<List<ChatData>>(emptyList())
+    var tp by mutableStateOf(ChatData())
+    var tpListner : ListenerRegistration? = null
+    var reply by mutableStateOf("")
     fun resetState(){
 
     }
@@ -170,6 +174,27 @@ class ChatViewmodel : ViewModel() {
                 }.reversed()
             }
         }
+    }
+
+    fun getTp(chatId: String) {
+        tpListner?.remove()
+        tpListner = Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).addSnapshotListener { value, error ->{
+            if(value!=null){
+                tp   = value.toObject(ChatData::class.java)!!
+            }
+        }
+            
+        }
+
+    }
+
+    fun setChatUser(usr: ChatUserData, id: String) {
+        _state.update {
+            it.copy(
+                user2 = usr , chatId = id
+            )
+        }
+
     }
 
 

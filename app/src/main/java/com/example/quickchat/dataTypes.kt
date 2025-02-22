@@ -21,7 +21,10 @@ data class  AppState(
     val userData : UserData? = null,
     val errorMessage : String? = null,
     val  srEmail  : String = "",
-    val showDialog  : Boolean = false
+    val showDialog  : Boolean = false,
+    val  user2 : ChatUserData?=null,
+    val chatId : String = "",
+
 )
 
 data class ChatData(

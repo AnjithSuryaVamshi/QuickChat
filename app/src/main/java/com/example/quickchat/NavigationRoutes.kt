@@ -10,4 +10,4 @@ object SignInSc
 object ChatsScreen
 
 @Serializable
-object Chat
+object ChatScreen

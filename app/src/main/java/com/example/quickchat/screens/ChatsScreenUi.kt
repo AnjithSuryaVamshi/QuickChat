@@ -1,7 +1,10 @@
 package com.example.quickchat.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,14 +65,15 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
-fun ChatsScreenUi(viewmodel: ChatViewmodel,state :  AppState) {
+fun ChatsScreenUi(
+    viewmodel: ChatViewmodel,
+    state: AppState,
+    showSingleChat: (ChatUserData, String) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
-    val  chats = viewmodel.chats
+    val chats = viewmodel.chats
     val filterChats = chats
-    val selectedItem = remember {
-        mutableStateListOf<String>()
-    }
-
+    val selectedItem = remember { mutableStateListOf<String>() }
 
     Scaffold(
         floatingActionButton = {
@@ -75,20 +81,35 @@ fun ChatsScreenUi(viewmodel: ChatViewmodel,state :  AppState) {
                 FloatingActionButton(
                     onClick = { expanded = true },
                     shape = RoundedCornerShape(50.dp),
-                    containerColor = MaterialTheme.colorScheme.inversePrimary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    Icon(imageVector = Icons.Default.AddComment, contentDescription = "Add")
+                    Icon(
+                        imageVector = Icons.Default.AddComment,
+                        contentDescription = "Add Chat",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
                 DropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                 ) {
                     DropdownMenuItem(
                         leadingIcon = {
-                            Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = "Message")
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = "QR Scanner",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         },
-                        text = { Text("Qr Scanner") },
+                        text = {
+                            Text(
+                                text = "QR Scanner",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
                         onClick = {
                             expanded = false
                             viewmodel.showDialog()
@@ -96,88 +117,99 @@ fun ChatsScreenUi(viewmodel: ChatViewmodel,state :  AppState) {
                     )
                     DropdownMenuItem(
                         leadingIcon = {
-                            Icon(imageVector = Icons.Default.QrCode, contentDescription = "Camera")
+                            Icon(
+                                imageVector = Icons.Default.QrCode,
+                                contentDescription = "QR Code",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         },
-                        text = { Text("Qr Code") },
+                        text = {
+                            Text(
+                                text = "QR Code",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
                         onClick = {
                             expanded = false
-                            // Handle action for second option
+                            // Handle action for QR Code
                         }
                     )
                 }
             }
         }
-    ) {
-        it
-        AnimatedVisibility(visible = state.showDialog) {
-            CustomDialogBox(
-                state =state,
-                hideDialog = { viewmodel.hideDialog() },
-                addChat = {
-                    viewmodel.addChat(state.srEmail)
-                    viewmodel.hideDialog()
-                    viewmodel.setSrEmail("")
-                },
-                setEmail = {
-                    viewmodel.setSrEmail(it)
-                }
-
-            )
-
-
-        }
+    ) { paddingValues ->
         Column(
-            modifier =  Modifier
-                .padding(top = 20.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
+            AnimatedVisibility(visible = state.showDialog) {
+                CustomDialogBox(
+                    state = state,
+                    hideDialog = { viewmodel.hideDialog() },
+                    addChat = {
+                        viewmodel.addChat(state.srEmail)
+                        viewmodel.hideDialog()
+                        viewmodel.setSrEmail("")
+                    },
+                    setEmail = {
+                        viewmodel.setSrEmail(it)
+                    }
+                )
+            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-
-                items(filterChats){
-                    val chatUser = if (it.user1?.userId != state.userData?.userId) {
-                        it.user1
+                items(filterChats) { chat ->
+                    val chatUser = if (chat.user1?.userId != state.userData?.userId) {
+                        chat.user1
                     } else {
-                        it.user2
+                        chat.user2
                     }
-                    ChatItem(
-                        state = state,
-                        chatUser!!,
-                        chat = it,
-                        mode = false,
-                        isSelected = selectedItem.contains(it.chatId)
-
-                    )
+                    if (chatUser != null) {
+                        ChatItem(
+                            state = state,
+                            userData = chatUser,
+                            chat = chat,
+                            mode = false,
+                            isSelected = selectedItem.contains(chat.chatId),
+                            showSingleChat = { user, id -> showSingleChat(user, id) }
+                        )
+                    }
                 }
-
             }
-
         }
-
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatItem(
     state: AppState,
-    userData : ChatUserData,
-    chat : ChatData,
-    mode : Boolean,
-    isSelected : Boolean
+    userData: ChatUserData,
+    chat: ChatData,
+    mode: Boolean,
+    isSelected: Boolean,
+    showSingleChat: (ChatUserData, String) -> Unit
 ) {
-
     val formatter = remember {
         SimpleDateFormat("hh:mm a", Locale.getDefault())
     }
-    val color = if (!isSelected) Color.Transparent else MaterialTheme.colorScheme.onPrimary
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+
     Row(
-        modifier = Modifier.fillMaxWidth()
-            .background(color = color)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = backgroundColor)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clickable { showSingleChat(userData, chat.chatId) }
+            .clip(RoundedCornerShape(12.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
+        // Profile Picture
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(userData.ppurl)
@@ -188,11 +220,15 @@ fun ChatItem(
             error = painterResource(id = R.drawable.blankprofile),
             contentDescription = "Profile Picture",
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(40.dp).clip(CircleShape)
-
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
         )
 
         Spacer(modifier = Modifier.width(16.dp))
+
+        // Chat Details
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -200,30 +236,28 @@ fun ChatItem(
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxSize(.95f)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = if (userData.userId == state.userData?.userId)
-                        userData.username.orEmpty() + "(You)" else userData.username.orEmpty(),
-                    modifier = Modifier.width(150.dp),
+                        "${userData.username.orEmpty()} (You)" else userData.username.orEmpty(),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = MaterialTheme.typography.titleMedium.fontWeight,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-
+                    overflow = TextOverflow.Ellipsis,
+                    color = contentColor
                 )
-                Spacer(modifier = Modifier.weight(1f))
+
                 Text(
                     text = if (chat.last?.time != null)
-                        formatter.format(chat.last?.time) else "",
+                        formatter.format(chat.last.time) else "",
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
-                    maxLines = 1,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             AnimatedVisibility(chat.last?.time != null && userData.typing) {
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,

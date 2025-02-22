@@ -25,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.quickchat.googlesignin.GoogleAuthUi
+import com.example.quickchat.screens.ChatUI
 import com.example.quickchat.screens.ChatsScreenUi
 import com.example.quickchat.screens.SigninScreen
 import com.example.quickchat.ui.theme.QuickChatTheme
@@ -120,7 +121,29 @@ class MainActivity : ComponentActivity() {
                             }
                             composable<ChatsScreen> {
                                 ChatsScreenUi(viewmodel = viewModel,
-                                    state = state,)
+                                    state = state,
+                                    showSingleChat = {
+                                        usr,id->
+                                        viewModel.getTp(id)
+                                        viewModel.setChatUser(usr,id)
+                                        navController.navigate(ChatScreen)
+
+                                    }
+                                    )
+                            }
+
+                            composable<ChatScreen> {
+                                ChatUI(
+                                    viewmodel =  viewModel,
+                                    navController = navController,
+                                    message = viewModel.message,
+                                    userData = state.user2!!,
+                                    chatId = state.chatId,
+                                    state = state,
+                                   onBack = {
+                                       navController.popBackStack()
+                                   }
+                                )
                             }
 
                         }
