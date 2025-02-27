@@ -6,14 +6,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 class ChatViewmodel : ViewModel() {
     val message: List<Message> =  emptyList()
@@ -26,6 +32,8 @@ class ChatViewmodel : ViewModel() {
     var tp by mutableStateOf(ChatData())
     var tpListner : ListenerRegistration? = null
     var reply by mutableStateOf("")
+    var msgListner : ListenerRegistration? = null
+    var messages by mutableStateOf<List<Message>>(listOf())
     fun resetState(){
 
     }
@@ -72,6 +80,8 @@ class ChatViewmodel : ViewModel() {
                 _state.update {
                     it.copy(userData = value.toObject(UserData::class.java))
                 }
+            }else {
+                Log.e("Firestore", "User document does not exist!")
             }
         }
     }
@@ -195,6 +205,59 @@ class ChatViewmodel : ViewModel() {
             )
         }
 
+    }
+
+    fun sendReply(
+        chatId : String,
+        replyMessage: Message =  Message(),
+        msg  : String,
+        senderId : String = state.value.userData?.userId.toString()
+
+    ){
+        val id = Firebase.firestore.collection(CHAT_COLLECTION).document().collection(
+            MESSAGE_COLLECTION).document().id
+        val time = Calendar.getInstance().time
+        val message = Message(
+            msgId = id,
+            repliedMessage = replyMessage,
+            senderId = senderId,
+            content = msg,
+            time = Timestamp(date  =  time),
+            read = false,
+        )
+        Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).collection(
+            MESSAGE_COLLECTION).document(id).set(message)
+        Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).update("last",message)
+
+    }
+    fun popMessages(
+        chatId: String
+    ){
+        msgListner?.remove()
+        viewModelScope.launch{
+            withContext(Dispatchers.IO) {
+                if (chatId != "") {
+                    msgListner =
+                        Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).collection(
+                            MESSAGE_COLLECTION
+                        ).addSnapshotListener { value, error ->
+                            if (value != null) {
+                                messages = value.documents.mapNotNull {
+                                    it.toObject(Message::class.java)
+                                }.sortedBy {
+                                    it.time
+                                }.reversed()
+                            }
+                            Log.d("TAG1", "popMessages: $messages")
+
+                        }
+                }
+            }
+        }
+
+
+
+        
     }
 
 

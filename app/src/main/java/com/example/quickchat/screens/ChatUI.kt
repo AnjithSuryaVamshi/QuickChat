@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,6 +30,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,8 +61,12 @@ fun ChatUI(
     context: Context = LocalContext.current,
     navController: NavController
 ) {
+    val listState = rememberLazyListState()
     val tp = viewmodel.tp
     val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(key1 = Unit) {
+        viewmodel.popMessages(state.chatId)
+    }
 
     Scaffold(
         topBar = {
@@ -90,7 +97,7 @@ fun ChatUI(
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            if (tp.user1?.userId == userData.userId) {
+                            if (tp?.user1?.userId == userData.userId) {
                                 AnimatedVisibility(tp.user1.typing) {
                                     Text(
                                         text = "typing...",
@@ -139,6 +146,13 @@ fun ChatUI(
 //            ) {
 //                // Add your chat messages here
 //            }
+            LazyColumn(
+                modifier =  Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                reverseLayout = true,
+                state  = listState
+            ) {  }
 
 
             Row(
@@ -203,7 +217,13 @@ fun ChatUI(
 
                     AnimatedVisibility(visible = viewmodel.reply.isNotEmpty()) {
                         IconButton(
-                            onClick = { /* Handle send action */ },
+                            onClick = { viewmodel.sendReply(
+                                msg = viewmodel.reply,
+                                chatId = chatId,
+//                                replyMessage = viewmodel.replyMessage
+                            )
+                                      viewmodel.reply =  ""
+                                      },
                             modifier = Modifier
                                 .padding(8.dp)
                                 .size(40.dp)

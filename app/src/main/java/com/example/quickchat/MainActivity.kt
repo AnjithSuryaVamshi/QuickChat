@@ -9,6 +9,9 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -53,7 +56,6 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(innerPadding)
                     ) {
                         val state by viewModel.state.collectAsState()
                         val navController = rememberNavController()
@@ -122,27 +124,45 @@ class MainActivity : ComponentActivity() {
                             composable<ChatsScreen> {
                                 ChatsScreenUi(viewmodel = viewModel,
                                     state = state,
-                                    showSingleChat = {
-                                        usr,id->
+                                    showSingleChat = { usr, id ->
                                         viewModel.getTp(id)
-                                        viewModel.setChatUser(usr,id)
+                                        viewModel.setChatUser(usr, id)
                                         navController.navigate(ChatScreen)
 
                                     }
-                                    )
+                                )
                             }
 
-                            composable<ChatScreen> {
+                            composable<ChatScreen>(
+                                enterTransition = {
+                                    slideInHorizontally(initialOffsetX = {
+                                        fullWidth -> fullWidth
+                                    },
+                                        animationSpec = tween(200)
+                                        )
+                                },
+                                exitTransition = {
+                                    slideOutHorizontally(
+                                        targetOffsetX = {
+                                            fullWidth -> -fullWidth
+                                        },
+                                        animationSpec = tween(200)
+                                    )
+                                }
+                            ) {
+
+                                //val user = state.user2 ?: return@composable
                                 ChatUI(
-                                    viewmodel =  viewModel,
+                                    viewmodel = viewModel,
                                     navController = navController,
-                                    message = viewModel.message,
+                                    message = viewModel.messages,
                                     userData = state.user2!!,
                                     chatId = state.chatId,
                                     state = state,
-                                   onBack = {
-                                       navController.popBackStack()
-                                   }
+                                    //messages = viewModel.messages,
+                                    onBack = {
+                                        navController.popBackStack()
+                                    }
                                 )
                             }
 

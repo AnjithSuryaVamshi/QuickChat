@@ -56,11 +56,14 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import com.example.quickchat.AppState
+import com.example.quickchat.CHAT_COLLECTION
 import com.example.quickchat.ChatData
 import com.example.quickchat.ChatUserData
 import com.example.quickchat.ChatViewmodel
 import com.example.quickchat.R
 import com.example.quickchat.dialogs.CustomDialogBox
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -199,7 +202,7 @@ fun ChatItem(
     }
     val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-
+    val date = chat.last?.time?.toDate()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -247,13 +250,14 @@ fun ChatItem(
                     overflow = TextOverflow.Ellipsis,
                     color = contentColor
                 )
-
                 Text(
-                    text = if (chat.last?.time != null)
-                        formatter.format(chat.last.time) else "",
+                    text = date?.let { formatter.format(it) } ?: "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+//                Text(
+//                    text = Firebase.firestore.collection(CHAT_COLLECTION).document(chat.chatId).get()
+//                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
