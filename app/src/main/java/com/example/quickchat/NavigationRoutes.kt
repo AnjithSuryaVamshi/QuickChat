@@ -11,3 +11,9 @@ object ChatsScreen
 
 @Serializable
 object ChatScreen
+
+@Serializable
+object QrScreen
+
+@Serializable
+object QrScannerScreen

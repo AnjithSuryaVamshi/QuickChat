@@ -3,6 +3,7 @@ package com.example.quickchat.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,17 +24,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -43,14 +50,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
@@ -67,11 +79,14 @@ import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsScreenUi(
     viewmodel: ChatViewmodel,
     state: AppState,
-    showSingleChat: (ChatUserData, String) -> Unit
+    showSingleChat: (ChatUserData, String) -> Unit,
+    showQr : () -> Unit,
+    showScanner : ()->Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val chats = viewmodel.chats
@@ -79,7 +94,40 @@ fun ChatsScreenUi(
     val selectedItem = remember { mutableStateListOf<String>() }
 
     Scaffold(
-        floatingActionButton = {
+        topBar = {
+            TopAppBar(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(bottomEnd = 16.dp, bottomStart = 16.dp))
+                    .shadow(8.dp)
+                    ,
+                        colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color(0xFFFFCF50),
+                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ),
+                title = {
+                    Text(
+                        text = "Session Chat",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                },
+                actions = {
+                    IconButton(
+                        onClick = { /* do something */ },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Menu,
+                            contentDescription = "Menu",
+                            modifier = Modifier.size(26.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            )
+        },
+                floatingActionButton = {
             Box {
                 FloatingActionButton(
                     onClick = { expanded = true },
@@ -90,7 +138,7 @@ fun ChatsScreenUi(
                     Icon(
                         imageVector = Icons.Default.AddComment,
                         contentDescription = "Add Chat",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
@@ -115,7 +163,7 @@ fun ChatsScreenUi(
                         },
                         onClick = {
                             expanded = false
-                            viewmodel.showDialog()
+                            showScanner()
                         }
                     )
                     DropdownMenuItem(
@@ -134,7 +182,7 @@ fun ChatsScreenUi(
                         },
                         onClick = {
                             expanded = false
-                            // Handle action for QR Code
+                            showQr()
                         }
                     )
                 }
@@ -145,7 +193,7 @@ fun ChatsScreenUi(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(Color(0xFFFEFAE0))
         ) {
             AnimatedVisibility(visible = state.showDialog) {
                 CustomDialogBox(
@@ -200,7 +248,7 @@ fun ChatItem(
     val formatter = remember {
         SimpleDateFormat("hh:mm a", Locale.getDefault())
     }
-    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color(0xFFFEFAE0)
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
     val date = chat.last?.time?.toDate()
     Row(
@@ -209,10 +257,12 @@ fun ChatItem(
             .background(color = backgroundColor)
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .clickable { showSingleChat(userData, chat.chatId) }
-            .clip(RoundedCornerShape(12.dp)),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(12.dp))
+            ,
+        verticalAlignment = Alignment.CenterVertically,
+
     ) {
-        // Profile Picture
+
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(userData.ppurl)
@@ -231,7 +281,7 @@ fun ChatItem(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Chat Details
+
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -248,7 +298,8 @@ fun ChatItem(
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = contentColor
+                    color = contentColor,
+                    modifier = Modifier.weight(0.7f)
                 )
                 Text(
                     text = date?.let { formatter.format(it) } ?: "",

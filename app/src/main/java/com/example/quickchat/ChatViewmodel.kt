@@ -7,12 +7,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.Bitmap
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.ktx.Firebase
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
+import com.google.zxing.common.BitMatrix
+import com.journeyapps.barcodescanner.BarcodeEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -100,7 +105,6 @@ class ChatViewmodel : ViewModel() {
         _state.update {
             it.copy(srEmail = email)
         }
-
 
     }
 
@@ -258,6 +262,44 @@ class ChatViewmodel : ViewModel() {
 
 
         
+    }
+
+    fun generateQr(): Bitmap?{
+        var idOfUser =  _state.value.userData?.userId.toString()
+        return try{
+            val multiFormatWriter = MultiFormatWriter()
+            val bitMatrix : BitMatrix =  multiFormatWriter.encode(
+                idOfUser,
+                BarcodeFormat.QR_CODE,
+                500,
+                500
+            )
+            val barcodeEncoder = BarcodeEncoder()
+            barcodeEncoder.createBitmap(bitMatrix)
+        }catch (e: Exception){
+            e.printStackTrace()
+            null
+        }
+
+    }
+
+    fun getEmailFromId(userId: String,onResult: (String?)-> Unit) {
+        val userCollection = Firebase.firestore.collection(USERS_COLLECTION)
+        userCollection.document(userId).get()
+            .addOnSuccessListener {
+                document->
+                if(document.exists()){
+                    onResult(document.getString("email"))
+                }else{
+                    onResult(null)
+                }
+
+            }
+            .addOnFailureListener{
+                it.printStackTrace()
+                onResult(null)
+            }
+
     }
 
 

@@ -30,6 +30,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.quickchat.googlesignin.GoogleAuthUi
 import com.example.quickchat.screens.ChatUI
 import com.example.quickchat.screens.ChatsScreenUi
+import com.example.quickchat.screens.QRgenerator
+import com.example.quickchat.screens.QrScannerUi
 import com.example.quickchat.screens.SigninScreen
 import com.example.quickchat.ui.theme.QuickChatTheme
 import com.google.android.gms.auth.api.identity.Identity
@@ -129,6 +131,12 @@ class MainActivity : ComponentActivity() {
                                         viewModel.setChatUser(usr, id)
                                         navController.navigate(ChatScreen)
 
+                                    },
+                                    showQr = {
+                                        navController.navigate(QrScreen)
+                                    },
+                                    showScanner = {
+                                        navController.navigate(QrScannerScreen)
                                     }
                                 )
                             }
@@ -155,7 +163,7 @@ class MainActivity : ComponentActivity() {
                                 ChatUI(
                                     viewmodel = viewModel,
                                     navController = navController,
-                                    message = viewModel.messages,
+                                    messages = viewModel.messages,
                                     userData = state.user2!!,
                                     chatId = state.chatId,
                                     state = state,
@@ -164,6 +172,13 @@ class MainActivity : ComponentActivity() {
                                         navController.popBackStack()
                                     }
                                 )
+                            }
+                            composable<QrScreen> {
+                                QRgenerator(navController = navController,viewmodel = viewModel)
+                            }
+
+                            composable<QrScannerScreen> {
+                                QrScannerUi(navController = navController, viewmodel = viewModel)
                             }
 
                         }

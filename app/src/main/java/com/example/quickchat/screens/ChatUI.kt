@@ -4,14 +4,19 @@ import android.content.Context
 import android.icu.text.CaseMap.Title
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,18 +35,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -49,13 +60,16 @@ import com.example.quickchat.ChatUserData
 import com.example.quickchat.ChatViewmodel
 import com.example.quickchat.Message
 import com.example.quickchat.UserData
+import java.text.SimpleDateFormat
+import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatUI(
     viewmodel: ChatViewmodel,
     userData: ChatUserData,
     chatId: String,
-    message: List<Message>,
+    messages: List<Message>,
     state: AppState,
     onBack: () -> Unit,
     context: Context = LocalContext.current,
@@ -71,12 +85,20 @@ fun ChatUI(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFFFCF50),
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
                 title = {
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+
+
                     ) {
                         // Profile Picture
                         AsyncImage(
@@ -128,31 +150,37 @@ fun ChatUI(
                     }
                 },
 
-            )
+                )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(Color(0xFFFEFAE0))
         ) {
 
-//            Column(
-//                modifier = Modifier
-//                    .weight(1f)
-//                    .fillMaxWidth()
-//                    .padding(horizontal = 16.dp, vertical = 8.dp)
-//            ) {
-//                // Add your chat messages here
-//            }
             LazyColumn(
-                modifier =  Modifier
+                modifier = Modifier
                     .weight(1f)
                     .fillMaxSize(),
                 reverseLayout = true,
-                state  = listState
-            ) {  }
+                state = listState
+            ) {
+                items(messages.size) { index ->
+                    val message = messages.get(index)
+                    val prevMessage = if (index > 0) messages[index - 1] else null
+                    val nextMessage = if (index < messages.size - 1) messages[index + 1] else null
+
+                    MessageItem(
+                        message = message,
+                        index = index,
+                        prevId = prevMessage?.senderId.toString(),
+                        nextId = nextMessage?.senderId.toString(),
+                        state = state
+                    )
+                }
+            }
 
 
             Row(
@@ -194,7 +222,8 @@ fun ChatUI(
                         onValueChange = { viewmodel.reply = it },
                         modifier = Modifier
                             .weight(1f)
-                            .focusRequester(focusRequester),
+                            .focusRequester(focusRequester)
+                        ,
                         placeholder = {
                             Text(
                                 text = "Type a message",
@@ -217,13 +246,14 @@ fun ChatUI(
 
                     AnimatedVisibility(visible = viewmodel.reply.isNotEmpty()) {
                         IconButton(
-                            onClick = { viewmodel.sendReply(
-                                msg = viewmodel.reply,
-                                chatId = chatId,
+                            onClick = {
+                                viewmodel.sendReply(
+                                    msg = viewmodel.reply,
+                                    chatId = chatId,
 //                                replyMessage = viewmodel.replyMessage
-                            )
-                                      viewmodel.reply =  ""
-                                      },
+                                )
+                                viewmodel.reply = ""
+                            },
                             modifier = Modifier
                                 .padding(8.dp)
                                 .size(40.dp)
@@ -241,4 +271,130 @@ fun ChatUI(
             }
         }
     }
+}
+
+@Composable
+fun MessageItem(message: Message, index: Int, prevId: String, nextId: String, state: AppState) {
+
+    val context = LocalContext.current
+    val brush = Brush.linearGradient(
+        listOf(
+            Color(0xFFAAE3F5),
+            Color(0xFFD8ECFA)
+        )
+    )
+
+    val brush2 = Brush.linearGradient(
+        listOf(
+            Color(0xFFFADA7A), // Peach
+            Color(0xFFFFE8B3)  // Warm Gold
+        )
+    )
+
+
+
+
+
+    val isCurrentUser = if (state.userData?.userId == message.senderId) true else false
+    val shape = if (isCurrentUser) {
+        if (prevId == message.senderId && nextId == message.senderId) {
+            RoundedCornerShape(
+                16.dp,
+                3.dp,
+                3.dp,
+                16.dp
+            )
+        } else if (prevId == message.senderId) {
+            RoundedCornerShape(
+                16.dp,
+                16.dp,
+                3.dp,
+                16.dp
+            )
+        } else if (nextId == message.senderId) {
+            RoundedCornerShape(
+                16.dp,
+                3.dp,
+                16.dp,
+                3.dp
+            )
+        } else {
+            RoundedCornerShape(
+                16.dp,
+                16.dp,
+                16.dp,
+                16.dp
+            )
+        }
+    } else {
+        if (prevId == message.senderId && nextId == message.senderId) {
+            RoundedCornerShape(
+                3.dp,
+                16.dp,
+                16.dp,
+                3.dp
+            )
+        } else if (prevId == message.senderId) {
+            RoundedCornerShape(
+                3.dp,
+                3.dp,
+                16.dp,
+                3.dp
+            )
+        } else if (nextId == message.senderId) {
+            RoundedCornerShape(
+                3.dp,
+                16.dp,
+                3.dp,
+                16.dp
+            )
+        } else {
+            RoundedCornerShape(
+                16.dp,
+                16.dp,
+                16.dp,
+                16.dp
+            )
+        }
+
+    }
+    val  color = if (isCurrentUser) brush else brush2
+    val allignment = if(isCurrentUser)Alignment.CenterEnd else Alignment.CenterStart
+    val formatter = remember {
+        SimpleDateFormat("hh:mm a", Locale.getDefault())
+    }
+    val interactionSource = remember { MutableInteractionSource() }
+    val indication = rememberRipple(
+       bounded = true,
+        color = Color(0xFFFFFFFF)
+    )
+
+    Box(
+        modifier = Modifier
+            .indication(interactionSource,indication)
+            .background(Color.Transparent)
+            .fillMaxWidth(),
+        contentAlignment = allignment
+    ){
+        Column(
+            verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier.padding(end = 5.dp,bottom = 5.dp)
+
+        ) {
+            Column(
+                modifier =  Modifier.shadow(2.dp,shape=shape).widthIn(max = 270.dp).fillMaxHeight().background(color,shape).padding(3.dp), horizontalAlignment =Alignment.End
+            ) {
+                if(message.content!=""){
+                    Column {
+                        Text(text = message.content.toString().trim(), color = Color.Black, modifier = Modifier.padding(top = 5.dp, start = 10.dp, end = 10.dp),)
+                        Text(text = formatter.format(message.time?.toDate()), color = Color.Gray, modifier = Modifier, fontSize = 12.sp)
+                    }
+
+
+                }
+            }
+
+        }
+    }
+
 }
