@@ -68,7 +68,10 @@ class MainActivity : ComponentActivity() {
                                         viewModel.showChats(userData.userId)
                                         navController.navigate(ChatsScreen)
                                     } else {
-                                        navController.navigate(SignInSc)
+                                        navController.navigate(SignInSc) {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+
                                     }
                                 }
 
@@ -93,20 +96,20 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 )
-                                LaunchedEffect(key1 = state.isSignedIn) {
+                                LaunchedEffect(state.isSignedIn) {
                                     if (state.isSignedIn) {
                                         val userData = googleAuthUi.getSignedInUser()
                                         userData?.run {
                                             viewModel.addUserDataToFirestore(userData)
                                             viewModel.getUserData(userData.userId)
                                             viewModel.showChats(userData.userId)
-                                            navController.navigate(ChatsScreen)
+                                            navController.navigate(ChatsScreen) {
+                                                popUpTo(0) { inclusive = true } // Clears entire backstack
+                                            }
                                         }
-
-
                                     }
-
                                 }
+
 
                                 SigninScreen(onSignInClick = {
                                     lifecycleScope.launch {
@@ -191,7 +194,10 @@ class MainActivity : ComponentActivity() {
                                             "SignOut Successful",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        navController.navigate(SignInSc)
+                                        navController.navigate(SignInSc) {
+                                            popUpTo(0) { inclusive = true }
+                                            launchSingleTop = true
+                                        }
 
                                     }
                                 }

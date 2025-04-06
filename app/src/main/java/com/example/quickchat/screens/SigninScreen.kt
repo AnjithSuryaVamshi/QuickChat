@@ -29,8 +29,8 @@ fun SigninScreen(
 ) {
     val brush = Brush.linearGradient(
         colors = listOf(
-            Color(0xFFFA9503),
-            Color(0xFFFA3333)
+            Color(0xFFFFC823),
+            Color(0xFFFF5722)
         )
     )
     Box(
@@ -39,30 +39,36 @@ fun SigninScreen(
             .background(
                 Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF1368FD),
-                        Color(0xFF5DD9FF)
+                        Color(0xFFFCA72B),
+                        Color(0xFF000936)
                     ),
-                    center = androidx.compose.ui.geometry.Offset(500f, 500f),
+                    center = androidx.compose.ui.geometry.Offset(500f, 600f),
                     radius = 1000f
                 )
             )
-    ) {
+    )
+    {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            Spacer(modifier = Modifier.height(76.dp))
             Image(
-                painter = painterResource(id = R.drawable.chatimg),
+                painter = painterResource(id = R.drawable.imglogopng),
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(200.dp),
                 contentDescription = "Logo"
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(76.dp))
 
             Text(
                 text = "Quick Chat",
                 style = MaterialTheme.typography.headlineLarge.copy(
-                    color = Color.White,
+                    color = Color(0xFFFFFFFF),
                     fontSize = 50.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.SansSerif
@@ -73,14 +79,16 @@ fun SigninScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "This is a chat application for temporary interaction",
-                fontSize = 20.sp,
+                text = "Chat application for temporary interaction",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Medium,
+
                 color = Color.White,
                 modifier = Modifier
                     .wrapContentSize()
                     .padding(horizontal = 71.dp)
             )
-            Spacer(modifier = Modifier.height(86.dp))
+            Spacer(modifier = Modifier.height(56.dp))
             Button(
                 onClick = { onSignInClick() },
                 modifier = Modifier
