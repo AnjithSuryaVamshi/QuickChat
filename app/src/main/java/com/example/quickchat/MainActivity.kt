@@ -1,12 +1,12 @@
 package com.example.quickchat
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.core.tween
@@ -14,15 +14,11 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.quickchat.googlesignin.GoogleAuthUi
 import com.example.quickchat.screens.ChatUI
 import com.example.quickchat.screens.ChatsScreenUi
+import com.example.quickchat.screens.ProfileScreenUi
 import com.example.quickchat.screens.QRgenerator
 import com.example.quickchat.screens.QrScannerUi
 import com.example.quickchat.screens.SigninScreen
@@ -126,6 +123,7 @@ class MainActivity : ComponentActivity() {
                             composable<ChatsScreen> {
                                 ChatsScreenUi(viewmodel = viewModel,
                                     state = state,
+                                    navController = navController,
                                     showSingleChat = { usr, id ->
                                         viewModel.getTp(id)
                                         viewModel.setChatUser(usr, id)
@@ -179,6 +177,24 @@ class MainActivity : ComponentActivity() {
 
                             composable<QrScannerScreen> {
                                 QrScannerUi(navController = navController, viewmodel = viewModel)
+                            }
+                            composable<ProfileScreen> {
+                                ProfileScreenUi(
+                                    viewModel,
+                                    state,
+                                    navController
+                                ) {
+                                    lifecycleScope.launch {
+                                        googleAuthUi.signOut()
+                                        Toast.makeText(
+                                            applicationContext,
+                                            "SignOut Successful",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        navController.navigate(SignInSc)
+
+                                    }
+                                }
                             }
 
                         }

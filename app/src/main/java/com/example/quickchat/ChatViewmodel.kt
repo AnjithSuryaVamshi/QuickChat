@@ -1,6 +1,8 @@
 package com.example.quickchat
 
 import android.content.ContentValues
+import android.content.ContentValues.TAG
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +16,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
@@ -54,30 +57,38 @@ class ChatViewmodel : ViewModel() {
 
 
     }
+    fun updateUserName(userData: UserData){
+        val userDocument = userCollection.document(userData.userId)
+        userDocument.update("username",userData.username)
+    }
 
     fun addUserDataToFirestore(userData: UserData) {
-        val userDataMap = mapOf(
-            "userId" to userData?.userId,
-            "username" to userData?.username,
-            "ppurl" to userData?.ppurl,
-            "email" to userData?.email
-
-        )
         val userDocument = userCollection.document(userData.userId)
-        userDocument.get().addOnSuccessListener {
-            if(it.exists()){
-                userDocument.update(userDataMap)
-            }else{
-                userDocument.set(userDataMap).addOnSuccessListener {
-                    Log.d(ContentValues.TAG, "User data added successfully")
-                }.addOnFailureListener {
-                    Log.e(ContentValues.TAG, "Error adding user data")
-                }
+        userDocument.get().addOnSuccessListener { snapshot ->
+            if (snapshot.exists()) {
+
+                Log.d(TAG, "User already exists, skipping update")
+            } else {
+                // New user — set initial data
+                val userDataMap = mapOf(
+                    "userId" to userData.userId,
+                    "username" to userData.username,
+                    "ppurl" to userData.ppurl,
+                    "email" to userData.email
+                )
+                userDocument.set(userDataMap)
+                    .addOnSuccessListener {
+                        Log.d(TAG, "User data added successfully")
+                    }
+                    .addOnFailureListener {
+                        Log.e(TAG, "Error adding user data: ${it.message}")
+                    }
             }
+        }.addOnFailureListener {
+            Log.e(TAG, "Error fetching user document: ${it.message}")
         }
-
-
     }
+
 
     fun getUserData(userId: String) {
         userDataListner = userCollection.document(userId).addSnapshotListener { value, error ->
@@ -197,7 +208,7 @@ class ChatViewmodel : ViewModel() {
                 tp   = value.toObject(ChatData::class.java)!!
             }
         }
-            
+
         }
 
     }
@@ -261,7 +272,7 @@ class ChatViewmodel : ViewModel() {
 
 
 
-        
+
     }
 
     fun generateQr(): Bitmap?{
@@ -287,7 +298,7 @@ class ChatViewmodel : ViewModel() {
         val userCollection = Firebase.firestore.collection(USERS_COLLECTION)
         userCollection.document(userId).get()
             .addOnSuccessListener {
-                document->
+                    document->
                 if(document.exists()){
                     onResult(document.getString("email"))
                 }else{
@@ -299,6 +310,29 @@ class ChatViewmodel : ViewModel() {
                 it.printStackTrace()
                 onResult(null)
             }
+
+    }
+    fun deleteChat(chatId: String){
+        Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).delete()
+    }
+
+    fun sendImage(uri: Uri, chatId: String) {
+        var storageRef  = Firebase.storage.reference
+        var imageRef = storageRef.child("$IMAGES_COLLECTION/${System.currentTimeMillis()}")
+        imageRef.putFile(uri).addOnSuccessListener {
+            imageRef.downloadUrl.addOnSuccessListener {
+                val url = it.toString()
+            }.addOnFailureListener{
+                it.printStackTrace()
+            }
+        }.addOnFailureListener{
+            it.printStackTrace()
+        }
+
+    }
+
+    fun sendImageAsmessage(uri: Uri, chatId: String, toString: String) {
+
 
     }
 

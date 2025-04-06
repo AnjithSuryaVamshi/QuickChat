@@ -24,11 +24,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -63,17 +67,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
+import com.example.quickchat.ActionIcon
 import com.example.quickchat.AppState
 import com.example.quickchat.CHAT_COLLECTION
 import com.example.quickchat.ChatData
 import com.example.quickchat.ChatUserData
 import com.example.quickchat.ChatViewmodel
+import com.example.quickchat.ProfileScreen
 import com.example.quickchat.R
+import com.example.quickchat.SwipableItemActions
 import com.example.quickchat.dialogs.CustomDialogBox
+import com.example.quickchat.dialogs.DeleteChatDialog
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
@@ -86,7 +95,8 @@ fun ChatsScreenUi(
     state: AppState,
     showSingleChat: (ChatUserData, String) -> Unit,
     showQr : () -> Unit,
-    showScanner : ()->Unit
+    showScanner : ()->Unit,
+    navController: NavController = rememberNavController()
 ) {
     var expanded by remember { mutableStateOf(false) }
     val chats = viewmodel.chats
@@ -99,11 +109,11 @@ fun ChatsScreenUi(
                 modifier = Modifier
                     .clip(RoundedCornerShape(bottomEnd = 16.dp, bottomStart = 16.dp))
                     .shadow(8.dp)
-                    ,
-                        colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFFFFCF50),
-                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
+                ,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFFFCF50),
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
                 title = {
                     Text(
                         text = "Session Chat",
@@ -114,20 +124,25 @@ fun ChatsScreenUi(
                 },
                 actions = {
                     IconButton(
-                        onClick = { /* do something */ },
-                        modifier = Modifier.size(36.dp)
+                        onClick = { navController.navigate(ProfileScreen) },
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer) // Optional background
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Menu,
+                            imageVector = Icons.Filled.Person,
                             contentDescription = "Menu",
-                            modifier = Modifier.size(26.dp),
+                            modifier = Modifier.size(24.dp),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
+
                 }
             )
         },
-                floatingActionButton = {
+        floatingActionButton = {
             Box {
                 FloatingActionButton(
                     onClick = { expanded = true },
@@ -209,6 +224,22 @@ fun ChatsScreenUi(
                     }
                 )
             }
+            var showDeleteDialog by remember { mutableStateOf(false) }
+            var chatIdToDelete by remember { mutableStateOf<String?>(null) }
+            if (showDeleteDialog && chatIdToDelete != null) {
+                DeleteChatDialog(
+                    onConfirm = {
+                        viewmodel.deleteChat(chatIdToDelete!!)
+                        showDeleteDialog = false
+                        chatIdToDelete = null
+                    },
+                    onDismiss = {
+                        showDeleteDialog = false
+                        chatIdToDelete = null
+                    }
+                )
+            }
+
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
@@ -220,14 +251,33 @@ fun ChatsScreenUi(
                         chat.user2
                     }
                     if (chatUser != null) {
-                        ChatItem(
-                            state = state,
-                            userData = chatUser,
-                            chat = chat,
-                            mode = false,
-                            isSelected = selectedItem.contains(chat.chatId),
-                            showSingleChat = { user, id -> showSingleChat(user, id) }
-                        )
+                        var isRevealed by remember { mutableStateOf(false) }
+                        SwipableItemActions(
+                            isRevealed = isRevealed,
+                            onExpanded = { isRevealed = true },
+                            onCollapsed = { isRevealed = false },
+                            actions = {
+                                ActionIcon(
+                                    onClick = {
+                                        isRevealed = false
+                                        chatIdToDelete = chat.chatId
+                                        showDeleteDialog = true
+                                    },
+                                    backgroundColor = Color.Red,
+                                    icon = Icons.Default.Delete
+                                )
+                            }
+
+                        ) {
+                            ChatItem(
+                                state = state,
+                                userData = chatUser,
+                                chat = chat,
+                                mode = false,
+                                isSelected = selectedItem.contains(chat.chatId),
+                                showSingleChat = { user, id -> showSingleChat(user, id) }
+                            )
+                        }
                     }
                 }
             }
@@ -253,15 +303,15 @@ fun ChatItem(
     val date = chat.last?.time?.toDate()
     Row(
         modifier = Modifier
+            .clickable { showSingleChat(userData, chat.chatId) }
             .fillMaxWidth()
             .background(color = backgroundColor)
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .clickable { showSingleChat(userData, chat.chatId) }
             .clip(RoundedCornerShape(12.dp))
-            ,
+        ,
         verticalAlignment = Alignment.CenterVertically,
 
-    ) {
+        ) {
 
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -313,24 +363,36 @@ fun ChatItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            AnimatedVisibility(chat.last?.time != null && userData.typing) {
+            AnimatedVisibility(visible = chat.last?.time != null || userData.typing) {
                 Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    if(chat.last?.senderId == state.userData?.userId){
+
+                    Text(
+                        text = chat.last?.content.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (chat.last?.senderId == state.userData?.userId) {
                         Icon(
-                            imageVector = Icons.Default.Check, contentDescription = "Check",
-                            modifier = Modifier.size(10.dp).padding(end = 5.dp),
-                            tint = if(chat.last?.read ==true) Color.Green else Color.Gray
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Check",
+                            modifier = Modifier
+                                .size(14.dp)
+                                .padding(end = 5.dp),
+                            tint = if (chat.last?.read == true) Color.Green else Color.Gray
                         )
-
-
                     }
 
                 }
             }
+
         }
 
     }

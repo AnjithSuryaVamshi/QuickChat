@@ -58,6 +58,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.firebase.storage.ktx)
+    implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -76,5 +78,6 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     implementation (libs.core)
     implementation (libs.zxing.android.embedded)
+
 
 }

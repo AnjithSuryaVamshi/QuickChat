@@ -17,3 +17,6 @@ object QrScreen
 
 @Serializable
 object QrScannerScreen
+
+@Serializable
+object ProfileScreen

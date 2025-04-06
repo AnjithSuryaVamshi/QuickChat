@@ -48,14 +48,6 @@ fun CustomDialogBox(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Email Input Field
-                OutlinedTextField(
-                    label = { Text("Email") },
-                    value = state.srEmail,
-                    onValueChange = { setEmail(it) },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
 
                 // Action Buttons
                 Row(
