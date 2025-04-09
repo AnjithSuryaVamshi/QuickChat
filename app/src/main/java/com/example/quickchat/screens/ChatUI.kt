@@ -9,15 +9,19 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -69,6 +73,7 @@ import com.example.quickchat.ChatUserData
 import com.example.quickchat.ChatViewmodel
 import com.example.quickchat.Message
 import com.example.quickchat.UserData
+import com.example.quickchat.ViewImageScreen
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -92,15 +97,15 @@ fun ChatUI(
     }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ){
+    ) {
         imgUri = it
     }
     var bitmap by remember {
         mutableStateOf<android.graphics.Bitmap?>(null)
     }
-    imgUri?.let{
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
-            var src =  ImageDecoder.createSource(context.contentResolver,it)
+    imgUri?.let {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            var src = ImageDecoder.createSource(context.contentResolver, it)
             bitmap = ImageDecoder.decodeBitmap(src)
         }
         ImagePreview(
@@ -108,12 +113,12 @@ fun ChatUI(
             hideDialog = {
                 imgUri = null
             },
-            sendImg = {
-                viewmodel.sendImage(it!!,chatId)
-                viewmodel.sendImageAsmessage(it!!,chatId,userData.userId.toString())
+            sendImg = { imgUrl ->
+                viewmodel.sendImage(imgUrl, chatId)
                 imgUri = null
             }
         )
+
     }
     LaunchedEffect(key1 = Unit) {
         viewmodel.popMessages(state.chatId)
@@ -146,6 +151,10 @@ fun ChatUI(
                                 .clip(CircleShape)
                                 .size(40.dp)
                                 .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                                .clickable {
+                                    viewmodel.showImage(userData.ppurl.toString())
+                                    navController.navigate(ViewImageScreen)
+                                }
                         )
                         // Username and Typing Indicator
                         Column(
@@ -214,7 +223,9 @@ fun ChatUI(
                         index = index,
                         prevId = prevMessage?.senderId.toString(),
                         nextId = nextMessage?.senderId.toString(),
-                        state = state
+                        state = state,
+                        navController = navController,
+                        viewmodel = viewmodel
                     )
                 }
             }
@@ -258,8 +269,7 @@ fun ChatUI(
                         onValueChange = { viewmodel.reply = it },
                         modifier = Modifier
                             .weight(1f)
-                            .focusRequester(focusRequester)
-                        ,
+                            .focusRequester(focusRequester),
                         placeholder = {
                             Text(
                                 text = "Type a message",
@@ -310,7 +320,7 @@ fun ChatUI(
 }
 
 @Composable
-fun MessageItem(message: Message, index: Int, prevId: String, nextId: String, state: AppState) {
+fun MessageItem(message: Message, index: Int, prevId: String, nextId: String, state: AppState,navController: NavController,viewmodel: ChatViewmodel) {
 
     val context = LocalContext.current
     val brush = Brush.linearGradient(
@@ -326,9 +336,6 @@ fun MessageItem(message: Message, index: Int, prevId: String, nextId: String, st
             Color(0xFFFFE8B3)  // Warm Gold
         )
     )
-
-
-
 
 
     val isCurrentUser = if (state.userData?.userId == message.senderId) true else false
@@ -394,8 +401,8 @@ fun MessageItem(message: Message, index: Int, prevId: String, nextId: String, st
         }
 
     }
-    val  color = if (isCurrentUser) brush else brush2
-    val allignment = if(isCurrentUser)Alignment.CenterEnd else Alignment.CenterStart
+    val color = if (isCurrentUser) brush else brush2
+    val allignment = if (isCurrentUser) Alignment.CenterEnd else Alignment.CenterStart
     val formatter = remember {
         SimpleDateFormat("hh:mm a", Locale.getDefault())
     }
@@ -407,28 +414,85 @@ fun MessageItem(message: Message, index: Int, prevId: String, nextId: String, st
 
     Box(
         modifier = Modifier
-            .indication(interactionSource,indication)
+            .indication(interactionSource, indication)
             .background(Color.Transparent)
             .fillMaxWidth(),
         contentAlignment = allignment
-    ){
+    ) {
         Column(
             verticalArrangement = Arrangement.Bottom,
-            modifier = Modifier.padding(end = 5.dp,bottom = 5.dp)
+            modifier = Modifier.padding(end = 5.dp, bottom = 5.dp)
 
         ) {
-            Column(
-                modifier =  Modifier.shadow(2.dp,shape=shape).widthIn(max = 270.dp).fillMaxHeight().background(color,shape).padding(3.dp), horizontalAlignment =Alignment.End
-            ) {
-                if(message.content!=""){
-                    Column {
-                        Text(text = message.content.toString().trim(), color = Color.Black, modifier = Modifier.padding(top = 5.dp, start = 10.dp, end = 10.dp),)
-                        Text(text = formatter.format(message.time?.toDate()), color = Color.Gray, modifier = Modifier, fontSize = 12.sp)
+            if (!message.imgUrl.isNullOrEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .background(
+                            color = if (isCurrentUser) Color(0xFFFFDF80) else Color(0xFFFFFFFF),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clip(RoundedCornerShape(16.dp))
+
+                ) {
+                    AsyncImage(
+                        model = message.imgUrl,
+                        contentDescription = "Shared Image",
+                        modifier = Modifier
+                            .widthIn(max = 240.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.LightGray)
+                            .clickable {
+                                viewmodel.showImage(message.imgUrl)
+                                navController.navigate(ViewImageScreen)
+                            }
+                    )
+
+                    if (message.content.isNotEmpty()) {
+                        Text(
+                            text = message.content.trim(),
+                            color = Color.Black,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .padding(start = 8.dp, end = 8.dp, top = 4.dp)
+                        )
                     }
 
-
+                    Text(
+                        text = formatter.format(message.time?.toDate()),
+                        color = Color.Gray,
+                        fontSize = 11.sp,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(end = 8.dp, top = 2.dp, bottom = 4.dp)
+                    )
+                }
+            }else if (message.content.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = if (isCurrentUser) Color(0xFFFFDF80) else Color(0xFFFFFFFF),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = message.content.trim(),
+                            color = Color.Black,
+                            fontSize = 15.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = formatter.format(message.time?.toDate()),
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.End)
+                        )
+                    }
                 }
             }
+
+
 
         }
     }

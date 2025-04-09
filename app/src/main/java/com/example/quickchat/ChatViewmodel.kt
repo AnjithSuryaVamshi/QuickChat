@@ -42,6 +42,7 @@ class ChatViewmodel : ViewModel() {
     var reply by mutableStateOf("")
     var msgListner : ListenerRegistration? = null
     var messages by mutableStateOf<List<Message>>(listOf())
+    var imgToShow = ""
     fun resetState(){
 
     }
@@ -221,13 +222,29 @@ class ChatViewmodel : ViewModel() {
         }
 
     }
+    fun sendImage(imgUrl: String, chatId: String, senderId : String = state.value.userData?.userId.toString()) {
+        val id = Firebase.firestore.collection(CHAT_COLLECTION).document().collection(
+            MESSAGE_COLLECTION).document().id
+        val time = Calendar.getInstance().time
+        val message = Message(
+            msgId = id,
+            senderId = senderId,
+            imgUrl = imgUrl,
+            time = Timestamp(date  =  time),
+            read = false,
+        )
+        Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).collection(
+            MESSAGE_COLLECTION).document(id).set(message)
+        Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).update("last",message)
+
+    }
+
 
     fun sendReply(
         chatId : String,
         replyMessage: Message =  Message(),
         msg  : String,
         senderId : String = state.value.userData?.userId.toString()
-
     ){
         val id = Firebase.firestore.collection(CHAT_COLLECTION).document().collection(
             MESSAGE_COLLECTION).document().id
@@ -315,26 +332,15 @@ class ChatViewmodel : ViewModel() {
     fun deleteChat(chatId: String){
         Firebase.firestore.collection(CHAT_COLLECTION).document(chatId).delete()
     }
-
-    fun sendImage(uri: Uri, chatId: String) {
-        var storageRef  = Firebase.storage.reference
-        var imageRef = storageRef.child("$IMAGES_COLLECTION/${System.currentTimeMillis()}")
-        imageRef.putFile(uri).addOnSuccessListener {
-            imageRef.downloadUrl.addOnSuccessListener {
-                val url = it.toString()
-            }.addOnFailureListener{
-                it.printStackTrace()
-            }
-        }.addOnFailureListener{
-            it.printStackTrace()
-        }
-
+    fun showImage(imgUrl: String){
+        imgToShow = imgUrl
     }
 
-    fun sendImageAsmessage(uri: Uri, chatId: String, toString: String) {
 
 
-    }
+
+
+
 
 
 }

@@ -30,6 +30,7 @@ import com.example.quickchat.screens.ProfileScreenUi
 import com.example.quickchat.screens.QRgenerator
 import com.example.quickchat.screens.QrScannerUi
 import com.example.quickchat.screens.SigninScreen
+import com.example.quickchat.screens.ViewImage
 import com.example.quickchat.ui.theme.QuickChatTheme
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
@@ -66,7 +67,9 @@ class MainActivity : ComponentActivity() {
                                     if (userData != null) {
                                         viewModel.getUserData(userData.userId)
                                         viewModel.showChats(userData.userId)
-                                        navController.navigate(ChatsScreen)
+                                        navController.navigate(ChatsScreen){
+                                            popUpTo(0) { inclusive = true }
+                                        }
                                     } else {
                                         navController.navigate(SignInSc) {
                                             popUpTo(0) { inclusive = true }
@@ -104,7 +107,7 @@ class MainActivity : ComponentActivity() {
                                             viewModel.getUserData(userData.userId)
                                             viewModel.showChats(userData.userId)
                                             navController.navigate(ChatsScreen) {
-                                                popUpTo(0) { inclusive = true } // Clears entire backstack
+                                                popUpTo(0) { inclusive = true }
                                             }
                                         }
                                     }
@@ -201,6 +204,16 @@ class MainActivity : ComponentActivity() {
 
                                     }
                                 }
+                            }
+                            composable<ViewImageScreen> {
+                                ViewImage(
+                                    imgUrl = viewModel.imgToShow,
+                                    state = state,
+                                    onBack = {
+                                        navController.popBackStack()
+                                        viewModel.imgToShow = ""
+                                    }
+                                )
                             }
 
                         }

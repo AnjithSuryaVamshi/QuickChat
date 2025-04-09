@@ -78,6 +78,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     implementation (libs.core)
     implementation (libs.zxing.android.embedded)
+    implementation("com.cloudinary:cloudinary-android:2.3.1")
 
 
 }

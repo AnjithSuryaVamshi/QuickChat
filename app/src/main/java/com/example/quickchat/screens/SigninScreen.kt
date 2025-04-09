@@ -66,7 +66,7 @@ fun SigninScreen(
             Spacer(modifier = Modifier.height(76.dp))
 
             Text(
-                text = "Quick Chat",
+                text = "Session Chat",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     color = Color(0xFFFFFFFF),
                     fontSize = 50.sp,
@@ -86,7 +86,7 @@ fun SigninScreen(
                 color = Color.White,
                 modifier = Modifier
                     .wrapContentSize()
-                    .padding(horizontal = 71.dp)
+                    .padding(horizontal = 40.dp)
             )
             Spacer(modifier = Modifier.height(56.dp))
             Button(

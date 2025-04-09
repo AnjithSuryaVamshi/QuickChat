@@ -51,6 +51,7 @@ import coil3.request.allowHardware
 import coil3.request.crossfade
 import com.example.quickchat.AppState
 import com.example.quickchat.ChatViewmodel
+import com.example.quickchat.ViewImageScreen
 import com.example.quickchat.dialogs.EditUserNameDialog
 import kotlinx.coroutines.Job
 
@@ -148,6 +149,10 @@ fun ProfileScreenUi(
                         .background(Color.White, CircleShape)
                         .border(4.dp, Color(0xFFFFCF50), CircleShape)
                         .shadow(4.dp, CircleShape)
+                        .clickable {
+                            viewModel.showImage(user?.ppurl.toString())
+                            navController.navigate(ViewImageScreen)
+                        }
                 )
 
                 IconButton(

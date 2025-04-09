@@ -2,6 +2,7 @@ package com.example.quickchat.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -240,45 +242,70 @@ fun ChatsScreenUi(
                 )
             }
 
+            if (chats.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.emp),
+                        contentDescription = "No active sessions image",
+                        modifier = Modifier.size(280.dp)
+                    )
+                    Text(
+                        text = "No active sessions",
+                        modifier = Modifier.padding(top = 16.dp),
+                        fontSize = 24.sp,  
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+            else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filterChats) { chat ->
+                        val chatUser = if (chat.user1?.userId != state.userData?.userId) {
+                            chat.user1
+                        } else {
+                            chat.user2
+                        }
+                        if (chatUser != null) {
+                            var isRevealed by remember { mutableStateOf(false) }
+                            SwipableItemActions(
+                                isRevealed = isRevealed,
+                                onExpanded = { isRevealed = true },
+                                onCollapsed = { isRevealed = false },
+                                actions = {
+                                    ActionIcon(
+                                        onClick = {
+                                            isRevealed = false
+                                            chatIdToDelete = chat.chatId
+                                            showDeleteDialog = true
+                                        },
+                                        backgroundColor = Color.Red,
+                                        icon = Icons.Default.Delete
+                                    )
+                                }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filterChats) { chat ->
-                    val chatUser = if (chat.user1?.userId != state.userData?.userId) {
-                        chat.user1
-                    } else {
-                        chat.user2
-                    }
-                    if (chatUser != null) {
-                        var isRevealed by remember { mutableStateOf(false) }
-                        SwipableItemActions(
-                            isRevealed = isRevealed,
-                            onExpanded = { isRevealed = true },
-                            onCollapsed = { isRevealed = false },
-                            actions = {
-                                ActionIcon(
-                                    onClick = {
-                                        isRevealed = false
-                                        chatIdToDelete = chat.chatId
-                                        showDeleteDialog = true
-                                    },
-                                    backgroundColor = Color.Red,
-                                    icon = Icons.Default.Delete
+                            ) {
+                                ChatItem(
+                                    state = state,
+                                    userData = chatUser,
+                                    chat = chat,
+                                    mode = false,
+                                    isSelected = selectedItem.contains(chat.chatId),
+                                    showSingleChat = { user, id -> showSingleChat(user, id) }
                                 )
                             }
-
-                        ) {
-                            ChatItem(
-                                state = state,
-                                userData = chatUser,
-                                chat = chat,
-                                mode = false,
-                                isSelected = selectedItem.contains(chat.chatId),
-                                showSingleChat = { user, id -> showSingleChat(user, id) }
-                            )
                         }
+
                     }
+
+
                 }
             }
         }
@@ -301,98 +328,109 @@ fun ChatItem(
     val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color(0xFFFEFAE0)
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
     val date = chat.last?.time?.toDate()
-    Row(
-        modifier = Modifier
-            .clickable { showSingleChat(userData, chat.chatId) }
-            .fillMaxWidth()
-            .background(color = backgroundColor)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(12.dp))
-        ,
-        verticalAlignment = Alignment.CenterVertically,
 
-        ) {
-
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(userData.ppurl)
-                .crossfade(true)
-                .allowHardware(true)
-                .build(),
-            placeholder = painterResource(id = R.drawable.blankprofile),
-            error = painterResource(id = R.drawable.blankprofile),
-            contentDescription = "Profile Picture",
-            contentScale = ContentScale.Crop,
+    Column {
+        Row(
             modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
+                .clickable { showSingleChat(userData, chat.chatId) }
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .shadow(3.dp, RoundedCornerShape(12.dp), clip = false)
+                .background(backgroundColor)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(userData.ppurl)
+                    .crossfade(true)
+                    .allowHardware(true)
+                    .build(),
+                placeholder = painterResource(id = R.drawable.blankprofile),
+                error = painterResource(id = R.drawable.blankprofile),
+                contentDescription = "Profile Picture",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = if (userData.userId == state.userData?.userId)
-                        "${userData.username.orEmpty()} (You)" else userData.username.orEmpty(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = contentColor,
-                    modifier = Modifier.weight(0.7f)
-                )
-                Text(
-                    text = date?.let { formatter.format(it) } ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-//                Text(
-//                    text = Firebase.firestore.collection(CHAT_COLLECTION).document(chat.chatId).get()
-//                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            AnimatedVisibility(visible = chat.last?.time != null || userData.typing) {
                 Row(
-                    horizontalArrangement = Arrangement.Start,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     Text(
-                        text = chat.last?.content.orEmpty(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
-                        fontSize = 16.sp,
+                        text = if (userData.userId == state.userData?.userId)
+                            "${userData.username.orEmpty()} (You)" else userData.username.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        color = contentColor,
+                        modifier = Modifier.weight(0.7f)
                     )
-                    if (chat.last?.senderId == state.userData?.userId) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Check",
-                            modifier = Modifier
-                                .size(14.dp)
-                                .padding(end = 5.dp),
-                            tint = if (chat.last?.read == true) Color.Green else Color.Gray
-                        )
-                    }
+                    Text(
+                        text = date?.let { formatter.format(it) } ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                AnimatedVisibility(visible = chat.last?.time != null || userData.typing) {
+                    Row(
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (chat.last?.imgUrl == null)
+                                chat.last?.content.orEmpty()
+                            else if (chat.last.senderId == state.userData?.userId)
+                                "Image Sent"
+                            else
+                                "Image Received",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (chat.last?.senderId == state.userData?.userId) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Check",
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .padding(end = 5.dp),
+                                tint = if (chat.last?.read == true) Color.Green else Color.Gray
+                            )
+                        }
+                    }
                 }
             }
+        }
 
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFFEFAE0))
+        ) {
+            Divider(
+                color = Color.LightGray.copy(alpha = 0.4f),
+                thickness = 0.6.dp,
+            )
         }
 
     }
