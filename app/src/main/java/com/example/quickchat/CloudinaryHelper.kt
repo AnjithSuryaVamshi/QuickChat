@@ -13,9 +13,7 @@ object CloudinaryHelper {
 
     private val cloudinary = Cloudinary(
         ObjectUtils.asMap(
-            "cloud_name", "da1ubi0r7",
-            "api_key", "131225859314861",
-            "api_secret", "vvNw_WVsyInk4hMXECDwUGoc3Mo"
+          
         )
     )
 
